@@ -1,28 +1,30 @@
 import fs from "fs/promises";
 
 export const pageFileDefaultData = (filePath) => {
-  let pageName = filePath.split(".")[0];
-  pageName = toPascalCase(pageName);
+  let pageName = convertStringToCamelCase(filePath);
+  let tabName = filePath.split("/").pop();
+
+  tabName = toPascalCase(tabName);
 
   return `
 import { Layout } from 'components'
-import { ${pageName}Tabs } from 'data'
+import { ${tabName}Tabs } from 'data'
 import { LCTabs } from 'grommet-ext'
 import { ${pageName}Page } from 'utils/page'
 
-function ${pageName}() {
+function ${tabName}() {
 	return (
 		<main>
-			<h1>${pageName} page</h1>
+			<h1>${tabName} page</h1>
 		</main>
 	)
 }
 
-export default ${pageName}
+export default ${tabName}
 
-${pageName}.getLayout = page => (
-	<Layout page={${pageName}Page} breads={[${pageName}Page]}>
-		<LCTabs tabs={${pageName}Tabs} />
+${tabName}.getLayout = page => (
+	<Layout page={${pageName}Page} breads={[${tabName}Page]}>
+		<LCTabs tabs={${tabName}Tabs} />
 		{page}
 	</Layout>
 )
@@ -30,16 +32,13 @@ ${pageName}.getLayout = page => (
 };
 
 export const pageFileUtilsData = (filePath) => {
-  let [folderName, pageName]= filePath.split("/");
-
-    if(!pageName){
-        pageName = folderName;
-    }
-
-  pageName = toPascalCase(pageName);
+  const pageName = convertStringToCamelCase(filePath);
+  let title = reverseConvertStringWithDelimiter(
+    filePath,
+  );
 
   return `
-export const ${pageName}Page 								= 							new PageMeta('${pageName}', 															'/${filePath}', faBell)
+export const ${pageName}Page 								=							new PageMeta(${title}, '/${filePath}' , faBell)
 
 `;
 };
@@ -57,4 +56,38 @@ export function toPascalCase(inputString) {
   return inputString.replace(/(\w)(\w*)/g, function (_, firstChar, restOfWord) {
     return firstChar.toUpperCase() + restOfWord.toLowerCase();
   });
+}
+
+function convertStringToCamelCase(inputString) {
+  // Split the input string by '/'
+  const words = inputString.split("/");
+
+  // Capitalize the first letter of each word and join them together
+  const camelCaseString = words.map((word) =>
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join("");
+
+  // Add "Page" to the end of the camelCaseString
+  const resultString = camelCaseString;
+
+  return resultString;
+}
+
+function reverseConvertStringWithDelimiter(inputString, delimiter = "||") {
+  // Use regular expression with capture groups to replace and capitalize words
+  const convertedString = inputString.replace(
+    /\/(\w)/g,
+    (_, match) => ` ${delimiter} ${match.toUpperCase()}`,
+  );
+
+  // Capitalize the first letter of the first word
+  const finalString = convertedString.charAt(0).toUpperCase() +
+    convertedString.slice(1);
+
+  // Split the string by the delimiter, reverse the array, and join it back
+  const reversedString = finalString.split(delimiter).reverse().join(delimiter);
+
+  const wordsInSingleQuote = reversedString.split(delimiter).map(word => `'${word}'`).join(delimiter);
+ return wordsInSingleQuote
+
 }
